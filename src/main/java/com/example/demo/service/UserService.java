@@ -2,32 +2,39 @@ package com.example.demo.service;
 
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
-public class UserService{
+@RequiredArgsConstructor
+public class UserService {
 
-    private final UserRepository userRepository;
+    private final UserRepository repository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    /**
+     * Yeni kullanıcı oluşturur.
+     * userId client tarafından gelmez, backend UUID üretir.
+     */
+    public User create(User user) {
+        user.setUserId(UUID.randomUUID().toString());
+        return repository.save(user);
     }
 
-    public User createUser(User user) {
-        if (userRepository.existsById(user.getUserId())) {
-            throw new RuntimeException("User already exists");
-        }
-        return userRepository.save(user);
-    }
-
+    /**
+     * userId (String) ile kullanıcı getirir.
+     */
     public User getUserById(String userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        return repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
     }
 
+    /**
+     * Tüm kullanıcıları listeler.
+     */
     public List<User> getAll() {
-        return userRepository.findAll();
+        return repository.findAll();
     }
 }

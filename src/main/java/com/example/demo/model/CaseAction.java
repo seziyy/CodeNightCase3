@@ -1,35 +1,39 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.ActorType;
+import com.example.demo.model.enums.CaseActionType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
 import java.time.Instant;
 
 @Entity
+@Table(name = "case_actions")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-@Table(name = "case_actions")
-
+@Builder
 public class CaseAction {
 
     @Id
     @Column(name = "action_id")
     private String actionId;
 
-    @ManyToOne
-    @JoinColumn(name = "case_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_id", nullable = false)
     private FraudCase fraudCase;
 
-    private String actionType;
-    private String actor;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_type", nullable = false)
+    private CaseActionType actionType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ActorType actor;
 
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Column(nullable = false)
     private Instant timestamp;
-
-    // getters & setters
 }

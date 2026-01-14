@@ -4,24 +4,23 @@ import com.example.demo.model.RiskProfile;
 import com.example.demo.model.RiskRule;
 import com.example.demo.model.User;
 import com.example.demo.repository.RiskProfileRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class RiskProfileService {
 
     private final RiskProfileRepository repository;
 
-    public RiskProfileService(RiskProfileRepository repository) {
-        this.repository = repository;
-    }
+    public RiskProfile getOrCreate(User user) {
 
-    public RiskProfile getProfile(String userId) {
-        return repository.findById(userId)
+        return repository.findById(String.valueOf(user.getUserId()))
                 .orElseGet(() -> {
                     RiskProfile rp = new RiskProfile();
-                    rp.setUserId(userId);
+                    rp.setUser(user);
                     rp.setRiskScore(0);
                     rp.setRiskLevel("LOW");
                     return repository.save(rp);
@@ -30,10 +29,22 @@ public class RiskProfileService {
 
     public void updateRisk(User user, List<RiskRule> rules) {
 
-        RiskProfile rp = getProfile(user.getUserId());
-        rp.setRiskScore(Math.min(100, rp.getRiskScore() + 30));
-        rp.setRiskLevel(rp.getRiskScore() > 70 ? "HIGH" : "MEDIUM");
-        rp.setSignals(rules.stream().map(RiskRule::getRuleId).toList().toString());
+        RiskProfile rp = getOrCreate(user);
+
+        rp.setRiskScore(
+                Math.min(100, rp.getRiskScore() + 30)
+        );
+
+        rp.setRiskLevel(
+                rp.getRiskScore() > 70 ? "HIGH" : "MEDIUM"
+        );
+
+        rp.setSignals(
+                rules.stream()
+                        .map(RiskRule::getRuleId)
+                        .toList()
+                        .toString()
+        );
 
         repository.save(rp);
     }

@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.UserSegment;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @AllArgsConstructor
+
 public class User {
 
     @Id
@@ -19,7 +21,9 @@ public class User {
 
     private String name;
     private String city;
-    private String segment;
+
+    @Enumerated(EnumType.STRING)
+    private UserSegment segment;
 
 
 }

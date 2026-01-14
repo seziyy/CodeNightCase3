@@ -3,28 +3,19 @@ package com.example.demo.service;
 import com.example.demo.model.BipNotification;
 import com.example.demo.model.User;
 import com.example.demo.repository.BipNotificationRepository;
-import com.example.demo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BipNotificationService {
 
-    private final BipNotificationRepository notificationRepository;
-    private final UserRepository userRepository;
+    private final BipNotificationRepository repository;
 
-    public BipNotificationService(BipNotificationRepository notificationRepository,
-                                  UserRepository userRepository) {
-        this.notificationRepository = notificationRepository;
-        this.userRepository = userRepository;
-    }
-
-    public BipNotification sendNotification(String userId, String message) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public BipNotification sendNotification(User user, String message) {
 
         BipNotification notification = new BipNotification();
         notification.setNotificationId("N-" + System.currentTimeMillis());
@@ -33,10 +24,10 @@ public class BipNotificationService {
         notification.setMessage(message);
         notification.setSentAt(Instant.now());
 
-        return notificationRepository.save(notification);
+        return repository.save(notification);
     }
 
-    public List<BipNotification> getAllNotifications() {
-        return notificationRepository.findAll();
+    public List<BipNotification> getAll() {
+        return repository.findAll();
     }
 }

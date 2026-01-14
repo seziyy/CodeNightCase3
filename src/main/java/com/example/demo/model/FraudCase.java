@@ -1,5 +1,7 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.CasePriority;
+import com.example.demo.model.enums.CaseStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +26,11 @@ public class FraudCase {
 
     private String openedBy;
     private String caseType;
-    private String status;
-    private String priority;
+    @Enumerated(EnumType.STRING)
+    private CaseStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private CasePriority priority;
 
     private Instant openedAt;
 

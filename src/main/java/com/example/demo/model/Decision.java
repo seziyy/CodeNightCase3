@@ -1,38 +1,45 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.RiskAction;
 import jakarta.persistence.*;
 import lombok.*;
-import com.example.demo.model.User;
 import java.time.Instant;
 
-
 @Entity
-@Data
+@Table(name = "decision_logs")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "decision_logs")
-
 public class Decision {
-
 
     @Id
     @Column(name = "decision_id")
     private String decisionId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(columnDefinition = "TEXT")
+    /**
+     * JSON array string
+     * Example: ["RR-01","RR-02"]
+     */
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String triggeredRules;
 
-    private String selectedAction;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RiskAction selectedAction;
 
+    /**
+     * JSON array string
+     * Example: ["PAYMENT_REVIEW"]
+     */
     @Column(columnDefinition = "TEXT")
     private String suppressedActions;
 
+    @Column(nullable = false)
     private Instant timestamp;
-
-    // getters & setters
 }

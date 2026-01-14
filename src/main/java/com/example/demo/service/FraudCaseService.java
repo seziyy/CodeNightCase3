@@ -3,19 +3,18 @@ package com.example.demo.service;
 import com.example.demo.model.FraudCase;
 import com.example.demo.model.User;
 import com.example.demo.repository.FraudCaseRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class FraudCaseService {
-
-    private final FraudCaseRepository repository;
-
-    public FraudCaseService(FraudCaseRepository repository) {
-        this.repository = repository;
-    }
+    @Autowired
+    private  FraudCaseRepository repository;
 
     public FraudCase openCase(User user, String type, String priority) {
 

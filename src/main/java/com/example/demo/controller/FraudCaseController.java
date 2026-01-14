@@ -1,36 +1,27 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.FraudCase;
-import com.example.demo.repository.FraudCaseRepository;
+import com.example.demo.service.FraudCaseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/fraud-cases")
 @RequiredArgsConstructor
 public class FraudCaseController {
 
-    private final FraudCaseRepository fraudCaseRepository;
+    @Autowired
+    private  FraudCaseService fraudCaseService;
 
-    @GetMapping
-    public List<FraudCaseDTO> getAllCases() {
-
-        return fraudCaseRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public FraudCaseController(FraudCaseService fraudCaseService) {
+        this.fraudCaseService = fraudCaseService;
     }
 
-    private FraudCaseDTO toDto(FraudCase fraudCase) {
-        return FraudCaseDTO.builder()
-                .caseId(fraudCase.getCaseId())
-                .userId(fraudCase.getUser())
-                .caseType(fraudCase.getCaseType())
-                .status(fraudCase.getStatus())
-                .priority(fraudCase.getPriority())
-                .build();
+    @GetMapping
+    public List<FraudCase> getAll() {
+        return fraudCaseService.getAll();
     }
 }
