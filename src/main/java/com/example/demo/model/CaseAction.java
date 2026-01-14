@@ -2,6 +2,8 @@ package com.example.demo.model;
 
 import com.example.demo.model.enums.ActorType;
 import com.example.demo.model.enums.CaseActionType;
+import com.example.demo.model.enums.Opened_by;
+import com.example.demo.model.enums.SelActionType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
@@ -27,9 +29,11 @@ public class CaseAction {
     @Column(name = "action_type", nullable = false)
     private CaseActionType actionType;
 
+
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ActorType actor;
+    private Opened_by actor;
 
     @Column(columnDefinition = "TEXT")
     private String note;

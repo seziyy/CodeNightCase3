@@ -1,6 +1,6 @@
 package com.example.demo.model;
 
-import com.example.demo.model.enums.RiskAction;
+import com.example.demo.model.enums.SelActionType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
@@ -31,7 +31,7 @@ public class Decision {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RiskAction selectedAction;
+    private SelActionType selectedAction;
 
     /**
      * JSON array string

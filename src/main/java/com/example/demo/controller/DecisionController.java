@@ -1,10 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Decision;
-import com.example.demo.service.DecisionService;
+import com.example.demo.repository.DecisionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -12,11 +13,11 @@ import java.util.List;
 @RequestMapping("/decisions")
 @RequiredArgsConstructor
 public class DecisionController {
-    @Autowired
-    private  DecisionService decisionService;
+
+    private final DecisionRepository repository;
 
     @GetMapping
     public List<Decision> getAll() {
-        return decisionService.getAll();
+        return repository.findAll();
     }
 }

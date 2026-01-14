@@ -2,12 +2,15 @@ package com.example.demo.service;
 
 import com.example.demo.model.BipNotification;
 import com.example.demo.model.User;
+import com.example.demo.model.enums.NotificationChannel;
+import com.example.demo.model.enums.ServiceType;
 import com.example.demo.repository.BipNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -15,14 +18,15 @@ public class BipNotificationService {
 
     private final BipNotificationRepository repository;
 
-    public BipNotification sendNotification(User user, String message) {
+    public BipNotification send(User user, String message) {
 
-        BipNotification notification = new BipNotification();
-        notification.setNotificationId("N-" + System.currentTimeMillis());
-        notification.setUser(user);
-        notification.setChannel("BiP");
-        notification.setMessage(message);
-        notification.setSentAt(Instant.now());
+        BipNotification notification = BipNotification.builder()
+                .notificationId(UUID.randomUUID().toString())
+                .user(user)
+                .channel(ServiceType.BIP)
+                .message(message)
+                .sentAt(Instant.now())
+                .build();
 
         return repository.save(notification);
     }

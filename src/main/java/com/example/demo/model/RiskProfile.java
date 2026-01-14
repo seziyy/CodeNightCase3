@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.RiskLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import com.example.demo.model.User;
@@ -17,7 +18,10 @@ public class RiskProfile {
     private String userId;
 
     private int riskScore;
-    private String riskLevel;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RiskLevel riskLevel;
+
 
     @Column(columnDefinition = "TEXT")
     private String signals;
@@ -27,5 +31,4 @@ public class RiskProfile {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // getters & setters
 }

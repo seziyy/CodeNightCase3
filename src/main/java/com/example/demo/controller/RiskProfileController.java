@@ -1,25 +1,22 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.RiskProfile;
-import com.example.demo.model.User;
 import com.example.demo.service.RiskProfileService;
-import com.example.demo.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/risk-profiles")
+@RequestMapping("/users/{id}/risk-profile")
+@RequiredArgsConstructor
 public class RiskProfileController {
 
-    @Autowired
-    private  RiskProfileService riskProfileService;
-    @Autowired
-    private  UserService userService;
+    private final RiskProfileService service;
 
-
-    @GetMapping("/{userId}")
-    public RiskProfile getRiskProfile(@PathVariable String userId) {
-        User user = userService.getUserById(userId);
-        return riskProfileService.getOrCreate(user);
+    @GetMapping
+    public RiskProfile get(@PathVariable String id) {
+        return service.getByUserId(id);
     }
 }

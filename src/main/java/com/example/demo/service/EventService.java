@@ -4,34 +4,25 @@ import com.example.demo.model.Event;
 import com.example.demo.model.User;
 import com.example.demo.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
 
-    private final EventRepository eventRepository;
-    @Autowired
-    private  UserService userService;
-    private final RiskEngineService riskEngineService;
+    private final EventRepository repository;
+    private final UserService userService;
+    private final RiskRuleService riskRuleService;
 
-    public Event ingest(Event event) {
+    public Event create(Event event) {
 
-        User user = userService.getUserById(
-                event.getUser().getUserId()
-        );
+        Event saved = repository.save(event);
 
-        event.setEventId("EV-" + System.currentTimeMillis());
-        event.setUser(user);
-        event.setTimestamp(Instant.now());
+        User user = userService.getUserById(event.getUserId());
 
-        Event saved = eventRepository.save(event);
-
-        riskEngineService.evaluate(user, saved);
+        riskRuleService.evaluate(user, saved);
 
         return saved;
     }
 }
+

@@ -14,26 +14,20 @@ public class UserService {
 
     private final UserRepository repository;
 
-    /**
-     * Yeni kullanıcı oluşturur.
-     * userId client tarafından gelmez, backend UUID üretir.
-     */
     public User create(User user) {
-        user.setUserId(UUID.randomUUID().toString());
+
+        if (user.getUserId() == null || user.getUserId().isBlank()) {
+            throw new IllegalArgumentException("userId boş olamaz");
+        }
+
         return repository.save(user);
     }
 
-    /**
-     * userId (String) ile kullanıcı getirir.
-     */
-    public User getUserById(String userId) {
-        return repository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+    public User getUserById(String id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
-    /**
-     * Tüm kullanıcıları listeler.
-     */
     public List<User> getAll() {
         return repository.findAll();
     }

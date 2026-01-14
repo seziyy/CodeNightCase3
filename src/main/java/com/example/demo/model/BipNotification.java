@@ -1,10 +1,10 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.ServiceType;
 import jakarta.persistence.*;
 import lombok.*;
-import com.example.demo.model.User;
+
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -23,7 +23,9 @@ public class BipNotification {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private String channel;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ServiceType channel;
 
     @Column(columnDefinition = "TEXT")
     private String message;

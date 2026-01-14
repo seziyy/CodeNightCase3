@@ -1,7 +1,11 @@
 package com.example.demo.model;
 
+import com.example.demo.model.enums.EventType;
+import com.example.demo.model.enums.ServiceType;
+import com.example.demo.model.enums.UnitType;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
 
 @Entity
@@ -17,21 +21,25 @@ public class Event {
         @Column(name = "event_id")
         private String eventId;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "user_id", nullable = false)
-        private User user;
+        // CASE FORMAT: user_id string
+        @Column(name = "user_id", nullable = false)
+        private String userId;
 
+        @Enumerated(EnumType.STRING)
         @Column(nullable = false)
-        private String service;
+        private ServiceType service;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "event_type", nullable = false)
-        private String eventType;
+        private EventType eventType;
 
         private Double value;
 
-        private String unit;
+        @Enumerated(EnumType.STRING)
+        private UnitType unit;
 
-        @Column(columnDefinition = "TEXT")
+        // CASE FORMAT: merchant=CryptoExchange
+        @Column(columnDefinition = "TEXT", nullable = false)
         private String meta;
 
         @Column(nullable = false)

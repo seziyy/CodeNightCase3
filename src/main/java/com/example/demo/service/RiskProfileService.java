@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.model.RiskProfile;
 import com.example.demo.model.RiskRule;
 import com.example.demo.model.User;
+import com.example.demo.model.enums.RiskLevel;
 import com.example.demo.repository.RiskProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,37 +16,29 @@ public class RiskProfileService {
 
     private final RiskProfileRepository repository;
 
-    public RiskProfile getOrCreate(User user) {
-
-        return repository.findById(String.valueOf(user.getUserId()))
-                .orElseGet(() -> {
-                    RiskProfile rp = new RiskProfile();
-                    rp.setUser(user);
-                    rp.setRiskScore(0);
-                    rp.setRiskLevel("LOW");
-                    return repository.save(rp);
-                });
-    }
-
     public void updateRisk(User user, List<RiskRule> rules) {
 
-        RiskProfile rp = getOrCreate(user);
+        RiskProfile profile = repository.findById(user.getUserId())
+                .orElse(new RiskProfile(
+                        user.getUserId(),
+                        0,
+                        RiskLevel.LOW,
+                        "",
+                        user
+                ));
 
-        rp.setRiskScore(
-                Math.min(100, rp.getRiskScore() + 30)
+        profile.setRiskScore(profile.getRiskScore() + rules.size() * 10);
+        profile.setRiskLevel(
+                profile.getRiskScore() > 70 ? RiskLevel.HIGH :
+                        profile.getRiskScore() > 40 ? RiskLevel.MEDIUM :
+                                RiskLevel.LOW
         );
 
-        rp.setRiskLevel(
-                rp.getRiskScore() > 70 ? "HIGH" : "MEDIUM"
-        );
+        repository.save(profile);
+    }
 
-        rp.setSignals(
-                rules.stream()
-                        .map(RiskRule::getRuleId)
-                        .toList()
-                        .toString()
-        );
-
-        repository.save(rp);
+    public RiskProfile getByUserId(String userId) {
+        return repository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Risk profile not found"));
     }
 }

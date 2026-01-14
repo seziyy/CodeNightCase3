@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import com.example.demo.model.enums.CasePriority;
 import com.example.demo.model.enums.CaseStatus;
+import com.example.demo.model.enums.Opened_by;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,10 @@ public class FraudCase {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private String openedBy;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Opened_by openedBy;
+
     private String caseType;
     @Enumerated(EnumType.STRING)
     private CaseStatus status;
@@ -36,5 +40,4 @@ public class FraudCase {
 
 
 
-    // getters & setters
 }

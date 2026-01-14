@@ -1,42 +1,31 @@
 package com.example.demo.service;
 
+import com.example.demo.model.FraudCase;
 import com.example.demo.model.User;
+import com.example.demo.model.enums.SelActionType;
+import com.example.demo.repository.FraudCaseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ActionService {
 
-    private final BipNotificationService notificationService;
-    private final FraudCaseService fraudCaseService;
+    private final FraudCaseRepository fraudCaseRepository;
 
-    public void handleAction(String action, User user) {
+    public void handleAction(SelActionType action, User user) {
 
-        switch (action) {
-            case "FORCE_2FA" ->
-                    notificationService.sendNotification(
-                            user,
-                            "Güvenliğiniz için ek doğrulama (2FA) zorunlu hale getirildi."
-                    );
+        if (action == SelActionType.OPEN_FRAUD_CASE) {
+            FraudCase fraudCase = FraudCase.builder()
+                    .caseId(UUID.randomUUID().toString())
+                    .user(user)
+                    .openedAt(Instant.now())
+                    .build();
 
-            case "OPEN_FRAUD_CASE" -> {
-                fraudCaseService.openCase(
-                        user,
-                        "AUTO_FRAUD",
-                        "HIGH"
-                );
-                notificationService.sendNotification(
-                        user,
-                        "Hesabınız güvenlik incelemesine alınmıştır."
-                );
-            }
-
-            case "TEMPORARY_BLOCK" ->
-                    notificationService.sendNotification(
-                            user,
-                            "Hesabınız geçici olarak bloke edilmiştir."
-                    );
+            fraudCaseRepository.save(fraudCase);
         }
     }
 }

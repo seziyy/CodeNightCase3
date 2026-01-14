@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,14 +18,14 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User user) {
-        User created = userService.create(user);
-        return ResponseEntity.ok(created);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(userService.create(user));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getById(@PathVariable String id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping
