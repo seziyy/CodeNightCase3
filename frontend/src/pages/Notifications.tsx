@@ -1,58 +1,73 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Bell, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, Clock, Send, RotateCw } from 'lucide-react';
 import type { BipNotification } from '../types';
-import { notificationService } from '../services/dataService';
+import apiClient from '../services/api';
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<BipNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     loadNotifications();
+    
+    // 3 saniyede bir bildirimleri güncelle
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadNotifications = async () => {
-    setLoading(true);
     try {
-      const data = await notificationService.getNotifications();
-      setNotifications(data);
+      setRefreshing(true);
+      const response = await apiClient.get<BipNotification[]>('/notifications');
+      setNotifications(response.data);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {
+      setRefreshing(false);
       setLoading(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const handleManualRefresh = async () => {
+    await loadNotifications();
+  };
+
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case 'DELIVERED':
         return <CheckCircle className="w-5 h-5 text-green-600" />;
       case 'SENT':
+      case 'SUCCESS':
+      default:
         return <Send className="w-5 h-5 text-blue-600" />;
       case 'FAILED':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'PENDING':
         return <Clock className="w-5 h-5 text-yellow-600" />;
-      default:
-        return <Bell className="w-5 h-5 text-gray-600" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case 'DELIVERED':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'SENT':
+      case 'SUCCESS':
+      default:
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'FAILED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -62,12 +77,12 @@ const Notifications: React.FC = () => {
 
   const filteredNotifications = filter === 'all'
     ? notifications
-    : notifications.filter(n => n.status === filter);
+    : notifications.filter(n => (n.status || 'SUCCESS') === filter);
 
   const statusCounts = {
     all: notifications.length,
     DELIVERED: notifications.filter(n => n.status === 'DELIVERED').length,
-    SENT: notifications.filter(n => n.status === 'SENT').length,
+    SENT: notifications.filter(n => n.status === 'SENT' || n.status === 'SUCCESS' || !n.status).length,
     FAILED: notifications.filter(n => n.status === 'FAILED').length,
     PENDING: notifications.filter(n => n.status === 'PENDING').length,
   };
@@ -90,6 +105,27 @@ const Notifications: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">BiP Notifications</h1>
         <p className="text-gray-600 mt-1">User notification history via BiP messaging</p>
       </header>
+
+      {/* Refresh Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <RotateCw className="w-5 h-5 text-blue-600" />
+          <div>
+            <p className="text-sm font-medium text-blue-900">Otomatik Güncelleme</p>
+            <p className="text-xs text-blue-700">
+              {lastUpdate ? `Son güncelleme: ${format(lastUpdate, 'HH:mm:ss')}` : 'Yükleniyor...'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleManualRefresh}
+          disabled={refreshing}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+        >
+          <RotateCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Yenile
+        </button>
+      </div>
 
       {/* Stats Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" aria-label="Bildirim istatistikleri">
@@ -227,23 +263,23 @@ const Notifications: React.FC = () => {
             </thead>
             <tbody>
               {filteredNotifications.map((notification) => (
-                <tr key={notification.notification_id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={notification.notificationId} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(notification.status)}
-                      <span className={`badge border ${getStatusColor(notification.status)}`} aria-label={`Durum: ${notification.status}`}>
-                        {notification.status}
+                      <span className={`badge border ${getStatusColor(notification.status)}`} aria-label={`Durum: ${notification.status || 'SUCCESS'}`}>
+                        {notification.status || 'SUCCESS'}
                       </span>
                     </div>
                   </td>
                   <td className="py-4 px-4">
                     <span className="font-mono text-sm font-medium text-gray-900">
-                      {notification.notification_id}
+                      {notification.notificationId}
                     </span>
                   </td>
                   <td className="py-4 px-4">
                     <span className="font-mono text-sm text-gray-700">
-                      {notification.user_id}
+                      {notification.userId}
                     </span>
                   </td>
                   <td className="py-4 px-4">
@@ -252,16 +288,16 @@ const Notifications: React.FC = () => {
                     </p>
                   </td>
                   <td className="py-4 px-4">
-                    {notification.event_id ? (
+                    {notification.eventId ? (
                       <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
-                        {notification.event_id}
+                        {notification.eventId}
                       </span>
                     ) : (
                       <span className="text-xs text-gray-400">-</span>
                     )}
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-600">
-                    {formatDate(notification.sent_at)}
+                    {formatDate(notification.sentAt)}
                   </td>
                 </tr>
               ))}

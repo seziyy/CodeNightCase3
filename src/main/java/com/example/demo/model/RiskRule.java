@@ -27,8 +27,9 @@ public class RiskRule {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RiskAction action;
+    
     @Column(nullable = false)
-    private int priority;
+    private Integer priority;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;

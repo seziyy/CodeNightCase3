@@ -112,21 +112,36 @@ export interface RiskRuleResponse {
   active: boolean;
 }
 
-// BiP Notification Interface
+// BiP Notification Interface (GET /notifications response)
 export interface BipNotification {
-  notification_id: string;
-  user_id: string;
+  notificationId: string;
+  userId: string;
   message: string;
-  sent_at: string;
-  status: 'SENT' | 'DELIVERED' | 'FAILED' | 'PENDING';
-  event_id?: string;
+  sentAt: string;
+  status?: string;
+  eventId?: string;
+}
+
+// Notification Response from API
+export interface NotificationResponse {
+  notificationId: string;
+  userId: string;
+  userName: string;
+  userCity: string;
+  userSegment: string;
+  message: string;
+  channel: string;
+  sentAt: string;
+  status: string;
+  mockMode: boolean;
+  statusMessage: string;
 }
 
 // Stats Interface
 export interface DashboardStats {
-  total_events: number;
-  high_risk_users: number;
-  open_cases: number;
-  active_rules: number;
-  recent_decisions: number;
+  totalEvents: number;
+  highRiskUsers: number;
+  openCases: number;
+  activeRules: number;
+  recentDecisions: number;
 }

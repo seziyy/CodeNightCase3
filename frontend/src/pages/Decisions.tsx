@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { FileText, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
-import type { DecisionResponse, ActionType } from '../types';
+import { FileText, AlertCircle, CheckCircle, XCircle, Bell } from 'lucide-react';
+import type { DecisionResponse, ActionType, NotificationResponse } from '../types';
 import apiClient from '../services/api';
+import NotificationModal from '../components/NotificationModal';
 
 const Decisions: React.FC = () => {
   const [decisions, setDecisions] = useState<DecisionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
+  const [notificationSent, setNotificationSent] = useState<Set<string>>(new Set());
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationResponse | null>(null);
 
   useEffect(() => {
     loadDecisions();
@@ -26,6 +30,39 @@ const Decisions: React.FC = () => {
       setError('Failed to load decisions');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getActionMessage = (action: ActionType): string => {
+    const messages: Record<ActionType, string> = {
+      'BLOCK': 'İşleminiz güvenlik nedeniyle engellendi. Lütfen müşteri hizmetleri ile iletişime geçin.',
+      'TEMPORARY_BLOCK': 'Hesabınız geçici olarak kilitlendi. 24 saat sonra tekrar deneyebilirsiniz.',
+      'FORCE_2FA': 'Güvenlik nedeniyle ek doğrulama (2FA) zorunlu hale getirildi.',
+      'PAYMENT_REVIEW': 'Ödemeniz manuel incelemeye alındı. En kısa zamanda sonuçlandırılacaktır.',
+      'WARN': 'Güvenlik sistemi anormal aktivite tespit etti. Hesaplarınızı kontrol edin.',
+      'REVIEW': 'İşleminiz incelemeye alınmıştır. Sonuç için lütfen bekleyiniz.',
+      'BIP_NOTIFY': 'Hesabınızla ilgili önemli bir bildirim alınmıştır.',
+      'LOG': 'Sisteme kayıt alınmıştır.',
+      'ALLOW': 'İşleminiz başarıyla tamamlanmıştır.',
+    };
+    return messages[action] || 'Hesabınız hakkında önemli bir güvenlik bildirimi.';
+  };
+
+  const sendBipNotification = async (decision: DecisionResponse) => {
+    try {
+      const message = getActionMessage(decision.selectedAction);
+      const response = await apiClient.post<NotificationResponse>(
+        `/notifications/${decision.user.userId}`,
+        null,
+        { params: { message } }
+      );
+      
+      setNotificationSent(prev => new Set([...prev, decision.decisionId]));
+      setSelectedNotification(response.data);
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error sending BiP notification:', error);
+      alert('Bildirim gönderilemedi. Lütfen daha sonra tekrar deneyin.');
     }
   };
 
@@ -187,7 +224,7 @@ const Decisions: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div>
+            <div className="mb-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">Actions:</p>
               <div className="flex flex-wrap gap-2" role="list" aria-label="Aksiyonlar">
                 {/* Selected Action */}
@@ -213,6 +250,23 @@ const Decisions: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* BiP Notification Button */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => sendBipNotification(decision)}
+                disabled={notificationSent.has(decision.decisionId)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  notificationSent.has(decision.decisionId)
+                    ? 'bg-green-100 text-green-700 border border-green-300 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                }`}
+                aria-label={`${decision.user.name}'e BiP bildirimi gönder`}
+              >
+                <Bell className="w-4 h-4" aria-hidden="true" />
+                {notificationSent.has(decision.decisionId) ? 'Bildirim Gönderildi' : 'BiP Bildirimi Gönder'}
+              </button>
+            </div>
           </article>
         ))}
 
@@ -223,6 +277,13 @@ const Decisions: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Notification Modal */}
+      <NotificationModal 
+        isOpen={modalOpen}
+        notification={selectedNotification}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 };

@@ -6,7 +6,10 @@ import {
   TrendingUp, 
   AlertCircle, 
   Activity,
-  Users
+  Users,
+  Target,
+  BarChart3,
+  ArrowUpRight
 } from 'lucide-react';
 import type {
   Event,
@@ -14,12 +17,7 @@ import type {
   FraudCase,
   DashboardStats,
 } from '../types';
-import {
-  eventService,
-  userRiskService,
-  fraudCaseService,
-  dashboardService,
-} from '../services/dataService';
+import apiClient from '../services/api';
 
 const Dashboard: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -35,19 +33,18 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [eventsData, risksData, casesData, statsData] = await Promise.all([
-        eventService.getEvents(10),
-        userRiskService.getUserRisks(),
-        fraudCaseService.getFraudCases(),
-        dashboardService.getStats(),
-      ]);
+      // Backend'den stats verilerini çek
+      const statsResponse = await apiClient.get<DashboardStats>('/dashboard/stats');
+      setStats(statsResponse.data);
 
-      setEvents(eventsData);
-      setUserRisks(risksData.slice(0, 5));
-      setFraudCases(casesData.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').slice(0, 5));
-      setStats(statsData);
+      // Mock data kullan (şu an backend'de decisions, cases vb. endpoint'ler yok)
+      // Production'da bunlar da API'den gelecek
+      setEvents([]);
+      setUserRisks([]);
+      setFraudCases([]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -116,53 +113,95 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* Stats Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" aria-label="İstatistik kartları">
-        <article className="card staggered-reveal staggered-delay-2" role="article" aria-label="Toplam olaylar">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Events</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.total_events || 0}</p>
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="İstatistik kartları">
+        {/* Total Events */}
+        <article className="group card staggered-reveal staggered-delay-2 hover:shadow-lg hover:border-turkcell-blue transition-all" role="article" aria-label="Toplam olaylar">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-4 h-4 text-turkcell-blue" aria-hidden="true" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Toplam Olaylar</p>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">{stats?.totalEvents || 0}</p>
+              <p className="text-xs text-gray-500 mt-2">Son 24 saatte işlenen</p>
             </div>
-            <Activity className="w-10 h-10 text-turkcell-blue" aria-hidden="true" />
+            <div className="rounded-lg bg-turkcell-blue/10 p-3 group-hover:bg-turkcell-blue/20 transition-colors">
+              <TrendingUp className="w-6 h-6 text-turkcell-blue" aria-hidden="true" />
+            </div>
           </div>
         </article>
 
-        <article className="card staggered-reveal staggered-delay-3" role="article" aria-label="Yüksek riskli kullanıcılar">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">High Risk Users</p>
-              <p className="text-2xl font-bold text-risk-high mt-1">{stats?.high_risk_users || 0}</p>
+        {/* High Risk Users */}
+        <article className="group card staggered-reveal staggered-delay-3 hover:shadow-lg hover:border-red-300 transition-all" role="article" aria-label="Yüksek riskli kullanıcılar">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden="true" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Yüksek Risk Kullanıcı</p>
+              </div>
+              <p className="text-3xl font-bold text-red-600">{stats?.highRiskUsers || 0}</p>
+              <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                <ArrowUpRight className="w-3 h-3" /> Risk seviyesi yükseliyor
+              </p>
             </div>
-            <Users className="w-10 h-10 text-risk-high" aria-hidden="true" />
+            <div className="rounded-lg bg-red-100 p-3 group-hover:bg-red-200 transition-colors">
+              <Users className="w-6 h-6 text-red-600" aria-hidden="true" />
+            </div>
           </div>
         </article>
 
-        <article className="card staggered-reveal staggered-delay-4" role="article" aria-label="Açık vakalar">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Open Cases</p>
-              <p className="text-2xl font-bold text-risk-medium mt-1">{stats?.open_cases || 0}</p>
+        {/* Open Cases */}
+        <article className="group card staggered-reveal staggered-delay-4 hover:shadow-lg hover:border-yellow-300 transition-all" role="article" aria-label="Açık vakalar">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-yellow-600" aria-hidden="true" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Açık Vakalar</p>
+              </div>
+              <p className="text-3xl font-bold text-yellow-600">{stats?.openCases || 0}</p>
+              <p className="text-xs text-yellow-600 mt-2">İnceleme bekleyen</p>
             </div>
-            <AlertCircle className="w-10 h-10 text-risk-medium" aria-hidden="true" />
+            <div className="rounded-lg bg-yellow-100 p-3 group-hover:bg-yellow-200 transition-colors">
+              <AlertCircle className="w-6 h-6 text-yellow-600" aria-hidden="true" />
+            </div>
           </div>
         </article>
 
-        <article className="card staggered-reveal staggered-delay-5" role="article" aria-label="Aktif kurallar">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Rules</p>
-              <p className="text-2xl font-bold text-turkcell-blue mt-1">{stats?.active_rules || 0}</p>
+        {/* Active Rules */}
+        <article className="group card staggered-reveal staggered-delay-5 hover:shadow-lg hover:border-green-300 transition-all" role="article" aria-label="Aktif kurallar">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-4 h-4 text-green-600" aria-hidden="true" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Aktif Kurallar</p>
+              </div>
+              <p className="text-3xl font-bold text-green-600">{stats?.activeRules || 0}</p>
+              <p className="text-xs text-green-600 mt-2">Sistemi koruyuyor</p>
             </div>
-            <AlertTriangle className="w-10 h-10 text-turkcell-blue" aria-hidden="true" />
+            <div className="rounded-lg bg-green-100 p-3 group-hover:bg-green-200 transition-colors">
+              <Target className="w-6 h-6 text-green-600" aria-hidden="true" />
+            </div>
           </div>
         </article>
       </section>
 
-      {/* Recent Events */}
+      {/* Recent Events - Şu an boş */}
+      {events.length > 0 && (
       <section className="card staggered-reveal staggered-delay-6" aria-labelledby="recent-events-heading">
-        <div className="flex items-center justify-between mb-4">
-          <h2 id="recent-events-heading" className="text-xl font-bold text-gray-900">Recent Events</h2>
-          <TrendingUp className="w-5 h-5 text-gray-400" aria-hidden="true" />
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+          <div>
+            <h2 id="recent-events-heading" className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-turkcell-blue" aria-hidden="true" />
+              Son Olaylar
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">Sistem tarafından kaydedilen en son 10 olay</p>
+          </div>
+          <div className="text-right">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Canlı
+            </div>
+          </div>
         </div>
         
         <div className="overflow-x-auto" role="region" aria-label="Son olaylar tablosu" tabIndex={0}>
@@ -221,11 +260,16 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
       </section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Risk Levels */}
+        {/* User Risk Levels - Şu an boş */}
+        {userRisks.length > 0 && (
         <section className="card staggered-reveal staggered-delay-7" aria-labelledby="top-risk-users-heading">
-          <h2 id="top-risk-users-heading" className="text-xl font-bold text-gray-900 mb-4">Top Risk Users</h2>
+          <h2 id="top-risk-users-heading" className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-red-600" aria-hidden="true" />
+            Yüksek Risk Kullanıcılar
+          </h2>
           
           <div className="space-y-3" role="list" aria-label="Yüksek riskli kullanıcılar listesi">
             {userRisks.map((user) => (
@@ -264,10 +308,15 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
         </section>
+        )}
 
-        {/* Open Fraud Cases */}
+        {/* Open Fraud Cases - Şu an boş */}
+        {fraudCases.length > 0 && (
         <section className="card staggered-reveal staggered-delay-8" aria-labelledby="open-fraud-cases-heading">
-          <h2 id="open-fraud-cases-heading" className="text-xl font-bold text-gray-900 mb-4">Open Fraud Cases</h2>
+          <h2 id="open-fraud-cases-heading" className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5 text-yellow-600" aria-hidden="true" />
+            Açık Dolandırıcılık Vakaları
+          </h2>
           
           <div className="space-y-3" role="list" aria-label="Açık dolandırıcılık vakaları listesi">
             {fraudCases.map((fraudCase) => (
@@ -303,6 +352,7 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
         </section>
+        )}
       </div>
     </div>
   );

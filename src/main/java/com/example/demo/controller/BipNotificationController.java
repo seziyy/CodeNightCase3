@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.NotificationResponse;
 import com.example.demo.model.BipNotification;
 import com.example.demo.model.User;
 import com.example.demo.service.BipNotificationService;
@@ -20,7 +21,7 @@ public class BipNotificationController {
     private final UserService userService;
 
     @PostMapping("/{userId}")
-    public ResponseEntity<BipNotification> send(
+    public ResponseEntity<NotificationResponse> send(
             @PathVariable String userId,
             @RequestParam String message
     ) {

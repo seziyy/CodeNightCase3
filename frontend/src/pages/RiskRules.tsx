@@ -480,12 +480,20 @@ const RiskRules: React.FC = () => {
             <span className="text-sm text-gray-600">Block the action</span>
           </div>
           <div className="flex items-center gap-2">
+            <span className="badge bg-orange-100 text-orange-800">FORCE_2FA</span>
+            <span className="text-sm text-gray-600">Force 2FA verification</span>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="badge bg-yellow-100 text-yellow-800">WARN</span>
             <span className="text-sm text-gray-600">Issue warning</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="badge bg-blue-100 text-blue-800">REVIEW</span>
             <span className="text-sm text-gray-600">Manual review required</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="badge bg-blue-100 text-blue-800">PAYMENT_REVIEW</span>
+            <span className="text-sm text-gray-600">Payment review needed</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="badge bg-purple-100 text-purple-800">BIP_NOTIFY</span>

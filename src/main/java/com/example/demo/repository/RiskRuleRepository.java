@@ -8,4 +8,6 @@ import java.util.List;
 public interface RiskRuleRepository extends JpaRepository<RiskRule, String> {
 
     List<RiskRule> findByIsActiveTrueOrderByPriorityAsc();
+    
+    long countByIsActive(boolean isActive);
 }

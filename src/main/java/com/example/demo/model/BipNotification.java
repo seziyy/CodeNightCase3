@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.example.demo.model.enums.ServiceType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,8 +20,12 @@ public class BipNotification {
     @Column(name = "notification_id")
     private String notificationId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @Column(name = "user_id", nullable = false)
+    private String userId;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
 
     @Enumerated(EnumType.STRING)
@@ -32,6 +37,6 @@ public class BipNotification {
 
     private Instant sentAt;
 
-    // getters & setters
 }
+
 
