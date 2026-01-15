@@ -1,43 +1,43 @@
 package com.example.demo.model;
 
-import com.example.demo.model.enums.CasePriority;
-import com.example.demo.model.enums.CaseStatus;
+import com.example.demo.model.enums.ActorType;
+import com.example.demo.model.enums.CaseActionType;
 import com.example.demo.model.enums.Opened_by;
+import com.example.demo.model.enums.SelActionType;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.Instant;
 
 @Entity
-@Data
+@Table(name = "case_actions")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "fraud_cases")
-
-public class FraudCase {
+public class CaseAction {
 
     @Id
-    @Column(name = "case_id")
-    private String caseId;
+    @Column(name = "action_id")
+    private String actionId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_id", nullable = false)
+    private FraudCase fraudCase;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_type", nullable = false)
+    private CaseActionType actionType;
+
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Opened_by openedBy;
+    private Opened_by actor;
 
-    private String caseType;
-    @Enumerated(EnumType.STRING)
-    private CaseStatus status;
+    @Column(columnDefinition = "TEXT")
+    private String note;
 
-    @Enumerated(EnumType.STRING)
-    private CasePriority priority;
-
-    private Instant openedAt;
-
-
-
+    @Column(nullable = false)
+    private Instant timestamp;
 }

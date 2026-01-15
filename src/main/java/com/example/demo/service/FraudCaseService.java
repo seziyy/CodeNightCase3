@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.model.FraudCase;
+import com.example.demo.model.CaseAction;
 import com.example.demo.model.User;
 import com.example.demo.model.enums.SelActionType;
 import com.example.demo.repository.FraudCaseRepository;
@@ -19,7 +19,7 @@ public class ActionService {
     public void handleAction(SelActionType action, User user) {
 
         if (action == SelActionType.OPEN_FRAUD_CASE) {
-            FraudCase fraudCase = FraudCase.builder()
+            CaseAction fraudCase = CaseAction.builder()
                     .caseId(UUID.randomUUID().toString())
                     .user(user)
                     .openedAt(Instant.now())
