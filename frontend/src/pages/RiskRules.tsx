@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Shield, Edit2, Save, X, Search, Filter, Zap } from 'lucide-react';
-import type { RiskRule } from '../types';
-import { riskRuleService } from '../services/dataService';
+import { Shield, Edit2, Save, X, Search, Filter, Zap, AlertCircle } from 'lucide-react';
+import type { RiskRuleResponse, ActionType } from '../types';
+import apiClient from '../services/api';
 
 const RiskRules: React.FC = () => {
-  const [rules, setRules] = useState<RiskRule[]>([]);
+  const [rules, setRules] = useState<RiskRuleResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPriority, setEditPriority] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,11 +24,13 @@ const RiskRules: React.FC = () => {
 
   const loadRules = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await riskRuleService.getRiskRules();
-      setRules(data);
+      const response = await apiClient.get<RiskRuleResponse[]>('/risk-rules');
+      setRules(response.data);
     } catch (error) {
       console.error('Error loading rules:', error);
+      setError('Failed to load risk rules');
     } finally {
       setLoading(false);
     }
@@ -35,26 +38,26 @@ const RiskRules: React.FC = () => {
 
   const toggleRuleStatus = async (ruleId: string, currentStatus: boolean) => {
     try {
-      const updatedRule = await riskRuleService.updateRule(ruleId, {
-        is_active: !currentStatus,
+      const updatedRule = await apiClient.put(`/risk-rules/${ruleId}`, {
+        active: !currentStatus,
       });
-      setRules(rules.map(r => r.rule_id === ruleId ? updatedRule : r));
+      setRules(rules.map(r => r.ruleId === ruleId ? updatedRule.data : r));
     } catch (error) {
       console.error('Error updating rule status:', error);
     }
   };
 
-  const startEditingPriority = (rule: RiskRule) => {
-    setEditingId(rule.rule_id);
+  const startEditingPriority = (rule: RiskRuleResponse) => {
+    setEditingId(rule.ruleId);
     setEditPriority(rule.priority);
   };
 
   const savePriority = async (ruleId: string) => {
     try {
-      const updatedRule = await riskRuleService.updateRule(ruleId, {
+      const updatedRule = await apiClient.put(`/risk-rules/${ruleId}`, {
         priority: editPriority,
       });
-      setRules(rules.map(r => r.rule_id === ruleId ? updatedRule : r));
+      setRules(rules.map(r => r.ruleId === ruleId ? updatedRule.data : r));
       setEditingId(null);
     } catch (error) {
       console.error('Error updating priority:', error);
@@ -87,11 +90,12 @@ const RiskRules: React.FC = () => {
   const bulkToggleStatus = async (newStatus: boolean) => {
     try {
       const promises = Array.from(selectedRules).map(ruleId => 
-        riskRuleService.updateRule(ruleId, { is_active: newStatus })
+        apiClient.put(`/risk-rules/${ruleId}`, { active: newStatus })
       );
-      const updatedRules = await Promise.all(promises);
+      const responses = await Promise.all(promises);
+      const updatedRules = responses.map(r => r.data);
       setRules(rules.map(r => {
-        const updated = updatedRules.find(u => u.rule_id === r.rule_id);
+        const updated = updatedRules.find(u => u.ruleId === r.ruleId);
         return updated || r;
       }));
       setSelectedRules(new Set());
@@ -104,11 +108,12 @@ const RiskRules: React.FC = () => {
   const bulkUpdatePriority = async () => {
     try {
       const promises = Array.from(selectedRules).map(ruleId => 
-        riskRuleService.updateRule(ruleId, { priority: bulkPriority })
+        apiClient.put(`/risk-rules/${ruleId}`, { priority: bulkPriority })
       );
-      const updatedRules = await Promise.all(promises);
+      const responses = await Promise.all(promises);
+      const updatedRules = responses.map(r => r.data);
       setRules(rules.map(r => {
-        const updated = updatedRules.find(u => u.rule_id === r.rule_id);
+        const updated = updatedRules.find(u => u.ruleId === r.ruleId);
         return updated || r;
       }));
       setSelectedRules(new Set());
@@ -119,11 +124,11 @@ const RiskRules: React.FC = () => {
   };
 
   const filteredRules = rules.filter(rule => {
-    const matchesSearch = rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        rule.rule_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = rule.ruleId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        rule.condition.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && rule.is_active) ||
-                         (filterStatus === 'inactive' && !rule.is_active);
+                         (filterStatus === 'active' && rule.active) ||
+                         (filterStatus === 'inactive' && !rule.active);
     const matchesAction = filterAction === 'all' || rule.action === filterAction;
     return matchesSearch && matchesStatus && matchesAction;
   });
@@ -134,9 +139,12 @@ const RiskRules: React.FC = () => {
     switch (action) {
       case 'BLOCK':
         return 'bg-red-100 text-red-800';
+      case 'FORCE_2FA':
+        return 'bg-orange-100 text-orange-800';
       case 'WARN':
         return 'bg-yellow-100 text-yellow-800';
       case 'REVIEW':
+      case 'PAYMENT_REVIEW':
         return 'bg-blue-100 text-blue-800';
       case 'BIP_NOTIFY':
         return 'bg-purple-100 text-purple-800';
@@ -164,6 +172,23 @@ const RiskRules: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64" role="status" aria-live="polite">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" aria-hidden="true" />
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={loadRules}
+            className="mt-4 px-4 py-2 bg-turkcell-blue text-white rounded-lg hover:bg-turkcell-blue/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -181,13 +206,13 @@ const RiskRules: React.FC = () => {
         <article className="card" role="article" aria-label="Aktif kurallar">
           <p className="text-sm text-gray-600">Active Rules</p>
           <p className="text-2xl font-bold text-risk-low mt-1">
-            {rules.filter(r => r.is_active).length}
+            {rules.filter(r => r.active).length}
           </p>
         </article>
         <article className="card" role="article" aria-label="İnaktif kurallar">
           <p className="text-sm text-gray-600">Inactive Rules</p>
           <p className="text-2xl font-bold text-gray-500 mt-1">
-            {rules.filter(r => !r.is_active).length}
+            {rules.filter(r => !r.active).length}
           </p>
         </article>
       </section>
@@ -199,7 +224,7 @@ const RiskRules: React.FC = () => {
             <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Kural adı veya ID'ye göre ara..."
+              placeholder="Kural ID veya condition'a göre ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-turkcell-blue"
@@ -306,29 +331,27 @@ const RiskRules: React.FC = () => {
                 <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Status</th>
                 <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Priority</th>
                 <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Rule ID</th>
-                <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Name</th>
                 <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Condition</th>
                 <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Action</th>
-                <th scope="col" className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Updated</th>
               </tr>
             </thead>
             <tbody>
               {filteredRules.map((rule) => (
                 <tr
-                  key={rule.rule_id}
+                  key={rule.ruleId}
                   className={`border-b transition-all duration-300 ${
-                    !rule.is_active
+                    !rule.active
                       ? 'opacity-60 bg-gray-50/50 border-gray-100'
                       : 'hover:bg-gray-50 border-gray-100'
-                  } ${selectedRules.has(rule.rule_id) ? 'bg-blue-100' : ''}`}
+                  } ${selectedRules.has(rule.ruleId) ? 'bg-blue-100' : ''}`}
                 >
                   <td className="py-4 px-4">
                     <input
                       type="checkbox"
-                      checked={selectedRules.has(rule.rule_id)}
-                      onChange={() => toggleRuleSelection(rule.rule_id)}
+                      checked={selectedRules.has(rule.ruleId)}
+                      onChange={() => toggleRuleSelection(rule.ruleId)}
                       className="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                      aria-label={`${rule.name} kuralını seç`}
+                      aria-label={`${rule.ruleId} kuralını seç`}
                     />
                   </td>
                   {/* Status Toggle with iOS Style */}
@@ -338,19 +361,19 @@ const RiskRules: React.FC = () => {
                       <div className="relative inline-flex items-center">
                         <input
                           type="checkbox"
-                          id={`toggle-${rule.rule_id}`}
-                          checked={rule.is_active}
-                          onChange={() => toggleRuleStatus(rule.rule_id, rule.is_active)}
+                          id={`toggle-${rule.ruleId}`}
+                          checked={rule.active}
+                          onChange={() => toggleRuleStatus(rule.ruleId, rule.active)}
                           className="peer sr-only cursor-pointer"
                           role="switch"
-                          aria-checked={rule.is_active}
-                          aria-label={`Kural ${rule.rule_id} durumunu ${rule.is_active ? 'devre dışı bırak' : 'etkinleştir'}`}
+                          aria-checked={rule.active}
+                          aria-label={`Kural ${rule.ruleId} durumunu ${rule.active ? 'devre dışı bırak' : 'etkinleştir'}`}
                         />
                         {/* Toggle Background */}
                         <label
-                          htmlFor={`toggle-${rule.rule_id}`}
+                          htmlFor={`toggle-${rule.ruleId}`}
                           className={`relative inline-block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 ${
-                            rule.is_active
+                            rule.active
                               ? 'bg-[#001a33] shadow-lg shadow-blue-900/50'
                               : 'bg-slate-300 shadow-md shadow-gray-400/30'
                           } peer-focus:ring-2 peer-focus:ring-[#FFC500] peer-focus:ring-offset-2`}
@@ -358,7 +381,7 @@ const RiskRules: React.FC = () => {
                           {/* Toggle Thumb (Circle) */}
                           <span
                             className={`absolute top-1 left-1 inline-block w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-md ${
-                              rule.is_active
+                              rule.active
                                 ? 'translate-x-7 shadow-blue-900/40'
                                 : 'translate-x-0 shadow-gray-500/30'
                             }`}
@@ -370,19 +393,19 @@ const RiskRules: React.FC = () => {
                       {/* Status Text Badge */}
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-semibold transition-all duration-300 ${
-                          rule.is_active
+                          rule.active
                             ? 'bg-green-100 text-[#001a33] border border-green-300'
                             : 'bg-slate-100 text-slate-600 border border-slate-300'
                         }`}
                       >
-                        {rule.is_active ? '✓ Aktif' : '✕ Pasif'}
+                        {rule.active ? '✓ Aktif' : '✕ Pasif'}
                       </span>
                     </div>
                   </td>
 
                   {/* Priority */}
                   <td className="py-4 px-4">
-                    {editingId === rule.rule_id ? (
+                    {editingId === rule.ruleId ? (
                       <div className="flex items-center gap-2" role="group" aria-label="Öncelik düzenleme">
                         <input
                           type="number"
@@ -393,7 +416,7 @@ const RiskRules: React.FC = () => {
                           aria-label="Öncelik değeri"
                         />
                         <button
-                          onClick={() => savePriority(rule.rule_id)}
+                          onClick={() => savePriority(rule.ruleId)}
                           className="p-1 text-green-600 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 rounded"
                           aria-label="Önceliği kaydet"
                         >
@@ -424,23 +447,13 @@ const RiskRules: React.FC = () => {
                   {/* Rule ID */}
                   <td className="py-4 px-4">
                     <span className="font-mono text-sm font-medium text-gray-900">
-                      {rule.rule_id}
+                      {rule.ruleId}
                     </span>
                   </td>
 
-                  {/* Name & Description */}
-                  <td className="py-4 px-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{rule.name}</p>
-                      {rule.description && (
-                        <p className="text-xs text-gray-500 mt-1">{rule.description}</p>
-                      )}
-                    </div>
-                  </td>
-
                   {/* Condition */}
-                  <td className="py-4 px-4">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
+                  <td className="py-4 px-4 max-w-md">
+                    <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 break-words">
                       {rule.condition}
                     </code>
                   </td>
@@ -450,11 +463,6 @@ const RiskRules: React.FC = () => {
                     <span className={`badge ${getActionColor(rule.action)}`}>
                       {rule.action}
                     </span>
-                  </td>
-
-                  {/* Updated Date */}
-                  <td className="py-4 px-4 text-sm text-gray-600">
-                    {formatDate(rule.updated_at)}
                   </td>
                 </tr>
               ))}

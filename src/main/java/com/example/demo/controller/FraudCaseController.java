@@ -15,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/fraud-cases")
 @RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class FraudCaseController {
 
     private final FraudCaseService fraudCaseService;

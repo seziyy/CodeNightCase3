@@ -4,12 +4,24 @@ export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 // Case Status
 export type CaseStatus = 'OPEN' | 'IN_PROGRESS' | 'CLOSED' | 'RESOLVED';
 
+// Segment Types
+export type SegmentType = 'INDIVIDUAL' | 'CORPORATE' | 'SME';
+
 // Action Types
-export type ActionType = 'BLOCK' | 'WARN' | 'LOG' | 'ALLOW' | 'REVIEW' | 'BIP_NOTIFY';
+export type ActionType = 'BLOCK' | 'WARN' | 'LOG' | 'ALLOW' | 'REVIEW' | 'BIP_NOTIFY' | 'TEMPORARY_BLOCK' | 'PAYMENT_REVIEW' | 'FORCE_2FA';
 
 // Event Types
 export type EventType = 'PAYMENT' | 'TRANSFER' | 'WITHDRAWAL' | 'LOGIN' | 'PROFILE_UPDATE' | 'PASSWORD_CHANGE';
 export type ServiceType = 'Paycell' | 'Kredi Kartı' | 'Hesap' | 'Mobil' | 'İnternet' | 'TV';
+
+// User Interface
+export interface User {
+  userId: string;
+  name: string;
+  city: string;
+  segment: SegmentType;
+  hibernateLazyInitializer?: Record<string, any>;
+}
 
 // Event Meta Interface
 export interface EventMeta {
@@ -68,6 +80,16 @@ export interface Decision {
   details?: Record<string, any>;
 }
 
+// Decision Response Interface (from API)
+export interface DecisionResponse {
+  decisionId: string;
+  user: User;
+  triggeredRules: string;
+  selectedAction: ActionType;
+  suppressedActions: string;
+  timestamp: string;
+}
+
 // Risk Rule Interface
 export interface RiskRule {
   rule_id: string;
@@ -79,6 +101,15 @@ export interface RiskRule {
   created_at: string;
   updated_at: string;
   description?: string;
+}
+
+// Risk Rule Response Interface (from API)
+export interface RiskRuleResponse {
+  ruleId: string;
+  condition: string;
+  action: ActionType;
+  priority: number;
+  active: boolean;
 }
 
 // BiP Notification Interface
