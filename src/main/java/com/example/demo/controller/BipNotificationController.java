@@ -23,7 +23,7 @@ public class BipNotificationController {
             @PathVariable String userId,
             @RequestParam String message
     ) {
-        User user = userService.getUserById(userId);
+        User user = userService.getById(userId);
         return ResponseEntity.ok(notificationService.send(user, message));
     }
 

@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -14,18 +13,33 @@ public class UserService {
 
     private final UserRepository repository;
 
+    /**
+     * Kullanıcı oluşturma
+     * userId dışarıdan gelir (U1, U2 vs)
+     */
     public User create(User user) {
 
         if (user.getUserId() == null || user.getUserId().isBlank()) {
             throw new IllegalArgumentException("userId boş olamaz");
         }
 
+        if (repository.existsById(user.getUserId())) {
+            throw new IllegalArgumentException(
+                    "User already exists: " + user.getUserId()
+            );
+        }
+
         return repository.save(user);
     }
 
-    public User getUserById(String id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    /**
+     * Controller'lar için TEK ve NET isim
+     */
+    public User getById(String userId) {
+        return repository.findById(userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found: " + userId)
+                );
     }
 
     public List<User> getAll() {

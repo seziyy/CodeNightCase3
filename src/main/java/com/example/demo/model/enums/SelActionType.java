@@ -6,6 +6,7 @@ public enum SelActionType {
     PAYMENT_REVIEW,
     TEMPORARY_BLOCK,
     OPEN_FRAUD_CASE,
-    BIP_NOTIFY
+    BIP_NOTIFY,
+    ANOMALY_ALERT
 
 }

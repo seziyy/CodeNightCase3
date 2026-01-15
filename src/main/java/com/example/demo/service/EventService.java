@@ -18,7 +18,7 @@ public class EventService {
 
         Event saved = repository.save(event);
 
-        User user = userService.getUserById(event.getUserId());
+        User user = userService.getById(event.getUserId());
 
         riskRuleService.evaluate(user, saved);
 

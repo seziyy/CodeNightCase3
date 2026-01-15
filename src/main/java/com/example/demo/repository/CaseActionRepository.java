@@ -9,3 +9,4 @@ public interface CaseActionRepository extends JpaRepository<CaseAction, String> 
 
     List<CaseAction> findByFraudCase_CaseId(String caseId);
 }
+

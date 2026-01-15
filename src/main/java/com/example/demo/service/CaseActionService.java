@@ -15,30 +15,21 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ActionService {
+public class CaseActionService {
 
-    private final FraudCaseService fraudCaseService;
     private final CaseActionRepository caseActionRepository;
+    private final FraudCaseService fraudCaseService;
 
-    /**
-     * Sistem veya admin tarafından aksiyon tetiklenmesi
-     */
-    public CaseAction handleAction(SelActionType actionType, User user, String note) {
+    public CaseAction addAction(FraudCase fraudCase,
+                                SelActionType actionType,
+                                Opened_by actor,
+                                String note) {
 
-        // Kullanıcıya ait açık fraud case bul
-        FraudCase fraudCase = fraudCaseService.getByUser(user.getUserId())
-                .stream()
-                .findFirst()
-                .orElseThrow(() ->
-                        new RuntimeException("No active fraud case for user: " + user.getUserId())
-                );
-
-        // Action kaydı oluştur
         CaseAction action = CaseAction.builder()
                 .actionId(UUID.randomUUID().toString())
                 .fraudCase(fraudCase)
                 .actionType(actionType)
-                .actor(Opened_by.SYSTEM)
+                .actor(actor)
                 .note(note)
                 .timestamp(Instant.now())
                 .build();
@@ -46,10 +37,27 @@ public class ActionService {
         return caseActionRepository.save(action);
     }
 
-    /**
-     * Bir case'e ait tüm aksiyonları getir
-     */
     public List<CaseAction> getActionsByCase(String caseId) {
         return caseActionRepository.findByFraudCase_CaseId(caseId);
     }
+
+    public CaseAction handleAction(SelActionType actionType,
+                                   User user,
+                                   String note) {
+
+        FraudCase fraudCase = fraudCaseService.getByUser(user.getUserId())
+                .stream()
+                .findFirst()
+                .orElseThrow(() ->
+                        new RuntimeException("No active fraud case for user: " + user.getUserId())
+                );
+
+        return addAction(
+                fraudCase,
+                actionType,
+                Opened_by.SYSTEM,
+                note
+        );
+    }
 }
+

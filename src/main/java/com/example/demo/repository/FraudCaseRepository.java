@@ -8,8 +8,4 @@ import java.util.List;
 public interface FraudCaseRepository extends JpaRepository<FraudCase, String> {
 
     List<FraudCase> findByUser_UserId(String userId);
-
-    List<FraudCase> findByStatus(String status);
-
-    List<FraudCase> findByPriority(String priority);
 }

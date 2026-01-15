@@ -18,7 +18,7 @@ public class RiskRuleService {
     private final RiskRuleRepository repository;
     private final RiskProfileService riskProfileService;
     private final DecisionService decisionService;
-    private final ActionService actionService;
+    private final FraudCaseService actionService;
 
     public List<RiskRule> getAll() {
         return repository.findAll();
@@ -75,7 +75,9 @@ public class RiskRuleService {
         // 7️⃣ Aksiyon uygula
         actionService.handleAction(
                 SelActionType.valueOf(selectedRule.getAction().name()),
-                user
+                user,
+                "Triggered by risk rule: " + selectedRule.getRuleId()
         );
+
     }
 }
